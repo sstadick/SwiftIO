@@ -9,7 +9,7 @@ public class Buffer {
     /// initialized with bytes from a read.
     var filled: UInt
 
-    init(capacity: Int = 0) {
+    public init(capacity: Int = 0) {
         self.buf = [UInt8](repeating: 0, count: capacity)
         self.pos = 0
         self.filled = 0
