@@ -16,7 +16,7 @@ public class BufReader<R> where R: Read {
     var inner: R 
     var buffer: Buffer
 
-    init(reader: R, capacity: Int = DEFAULT_BUF_SIZE) {
+    public init(reader: R, capacity: Int = DEFAULT_BUF_SIZE) {
         self.inner = reader
         self.buffer = Buffer(capacity: capacity)
     }
@@ -60,8 +60,8 @@ extension BufReader: BufRead {
             let available = try self.fillBuf()
             // TODO: Use memchr to find a byte in our buffer
             if let index = available.firstIndex(of: UInt8(ascii: "\n")) {
-                buf.append(contentsOf: available[available.startIndex...index])
-                (done, used) = (true, (index+1) - available.startIndex )
+                buf.append(contentsOf: available[0...index])
+                (done, used) = (true, index+1)
             } else {
                 buf.append(contentsOf: available)
                 (done, used) = (false, available.count)
@@ -82,8 +82,6 @@ extension BufReader: BufRead {
         buf.append(str)
         return bytes_read
     }
-
-
 }
 
 extension BufReader: Read {
