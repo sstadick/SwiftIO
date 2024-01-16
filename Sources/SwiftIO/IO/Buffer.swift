@@ -56,7 +56,7 @@ public class Buffer {
         }
     }
 
-    public func fillBuf(reader: inout Read) throws -> ArraySlice<UInt8> {
+    public func fillBuf<R>(reader: inout R) throws -> ArraySlice<UInt8> where R: Read {
         // If we've reached the end ouf our internal buffer then we need to fetch
         // some more data from the underlying reader.
         // Branch using `>=` instead of the more correct `==` to tell
@@ -65,7 +65,7 @@ public class Buffer {
         if self.pos >= self.filled {
             assert(self.pos == self.filled)
 
-            let bytes_read = try reader.read(buf: &self.buf)
+            let bytes_read = try reader.read(buf: &self.buf, amt: self.capacity())
             self.pos = 0
             self.filled = UInt(bytes_read)
         }

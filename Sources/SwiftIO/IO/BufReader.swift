@@ -8,15 +8,15 @@ public protocol BufRead {
     /// Read all bytes into `buf` until the delimiter `delim` is reached, or until EOF. If successful, returns the total number of bytes read.
     mutating func readUntil(delim: UInt8, buf: inout [UInt8]) throws -> Int
     /// Read all bytes untuil a newline (the 0xA byte) is reached, and append them to the supplied buffer. If successful, returns the total number of bytes read.
-    mutating func readLine(buf: inout [UInt8]) throws -> Int
+    mutating func readLine(buf: inout String) throws -> Int
 
 }
 
-public class BufReader {
-    var inner: Read
+public class BufReader<R> where R: Read {
+    var inner: R 
     var buffer: Buffer
 
-    init(reader: Read, capacity: Int = 4096) {
+    init(reader: R, capacity: Int = DEFAULT_BUF_SIZE) {
         self.inner = reader
         self.buffer = Buffer(capacity: capacity)
     }
@@ -40,6 +40,8 @@ public class BufReader {
 }
 
 extension BufReader: BufRead {
+
+
     public func fillBuf() throws -> ArraySlice<UInt8>{
         try self.buffer.fillBuf(reader: &self.inner)
     }
@@ -48,27 +50,52 @@ extension BufReader: BufRead {
         self.buffer.consume(amt: UInt(n))
     }
 
+    
     public func readUntil(delim: UInt8, buf: inout [UInt8]) throws -> Int {
-        0
+        // https://github.com/rust-lang/rust/blob/bf2637f4e89aab364d7ab28deb09820363bef86d/library/std/src/io/mod.rs#L2067
+        var read = 0
+        var done = false
+        var used = 0
+        while true {
+            let available = try self.fillBuf()
+            // TODO: Use memchr to find a byte in our buffer
+            if let index = available.firstIndex(of: UInt8(ascii: "\n")) {
+                buf.append(contentsOf: available[available.startIndex...index])
+                (done, used) = (true, (index+1) - available.startIndex )
+            } else {
+                buf.append(contentsOf: available)
+                (done, used) = (false, available.count)
+            }
+            self.consume(n: used)
+            read += used
+            if done || used == 0 {
+                return read
+            }
+        }
     }
 
-    public func readLine(buf: inout [UInt8]) throws -> Int {
-       0 
+    public func readLine(buf: inout String) throws -> Int {
+        // https://doc.rust-lang.org/src/std/io/mod.rs.html#2284
+        var raw_buf: [UInt8] = Array(buf.utf8)
+        let bytes_read = try self.readUntil(delim: UInt8(ascii: "\n"), buf: &raw_buf)
+        let str = String(decoding: raw_buf, as: UTF8.self)
+        buf.append(str)
+        return bytes_read
     }
 
 
 }
 
 extension BufReader: Read {
-    public func read(buf: inout [UInt8]) throws -> Int {
+    public func read(buf: inout [UInt8], amt: UInt) throws -> Int {
         // If we don't have any buffered data and we're doing a massive read
         // (larger than the internal buffer), bypass our buffer completely.
         if self.buffer.getPos() == self.buffer.getFilled() && buf.count >= self.buffer.capacity() {
             self.discardBuffer();
-            return try self.inner.read(buf: &buf)
+            return try self.inner.read(buf: &buf, amt: amt)
         }
 
-        var rem = try self.fillBuf()
+        let rem = try self.fillBuf()
         // TODO: stuck here: https://github.com/rust-lang/rust/blob/fa0dc208d0a34027c1d3cca7d47975d8238bcfde/library/std/src/io/buffered/bufreader.rs#L289
         // I don't understand how we fill the `buf` if `buf` is larger than our capacity.
         // Maybe the answer is that read isn't guaranteed to fill the entire buffer?
@@ -78,7 +105,7 @@ extension BufReader: Read {
         // TODO: udpate Read api to take a slice instead of an array
         buf.removeAll(keepingCapacity: true)
         buf.append(contentsOf: rem[0..<buf.count])
-        self.consume(n: Int)
-
+        self.consume(n: rem.count)
+        return rem.count
     }
 }
