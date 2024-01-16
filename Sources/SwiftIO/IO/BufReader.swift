@@ -60,7 +60,7 @@ extension BufReader: BufRead {
             let available = try self.fillBuf()
             // TODO: Use memchr to find a byte in our buffer
             if let index = available.firstIndex(of: UInt8(ascii: "\n")) {
-                buf.append(contentsOf: available[0...index])
+                buf.append(contentsOf: available[available.startIndex...index])
                 (done, used) = (true, index+1)
             } else {
                 buf.append(contentsOf: available)

@@ -60,4 +60,15 @@ class BufReaderTests: XCTestCase {
         XCTAssertEqual(line, "This is a test.\n")
         XCTAssertEqual(bytes_read2, line.utf8.count)
     }
+
+    func testReadUntil() throws {
+        let reader = BufReader(reader: self.fileHandle)
+
+        var count = 0
+        var buffer: [UInt8] = []
+        while try reader.readUntil(delim: UInt8(ascii: "\n"), buf: &buffer) > 0 {
+            count += 1
+        }
+        XCTAssertEqual(count, 2)
+    }
 }
