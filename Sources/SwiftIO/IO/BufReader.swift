@@ -51,8 +51,11 @@ extension BufReader: BufRead {
     }
 
     
+    // TODO: need to decide on an api: should the input buffer have anything in it and if so what happens to that?
+    // Or do we just dropt all values and assume an empyt buffer every time.
     public func readUntil(delim: UInt8, buf: inout [UInt8]) throws -> Int {
         // https://github.com/rust-lang/rust/blob/bf2637f4e89aab364d7ab28deb09820363bef86d/library/std/src/io/mod.rs#L2067
+        buf.removeAll(keepingCapacity: true)
         var read = 0
         var done = false
         var used = 0
@@ -61,8 +64,10 @@ extension BufReader: BufRead {
             // TODO: Use memchr to find a byte in our buffer
             if let index = available.firstIndex(of: UInt8(ascii: "\n")) {
                 buf.append(contentsOf: available[available.startIndex...index])
+//                copyBuffer(from: available[available.startIndex...index], to: &buf)
                 (done, used) = (true, index+1 - available.startIndex)
             } else {
+//                copyBuffer(from: available, to: &buf)
                 buf.append(contentsOf: available)
                 (done, used) = (false, available.count)
             }
@@ -101,8 +106,9 @@ extension BufReader: Read {
 
         // copy bytes from rem into buf
         // TODO: udpate Read api to take a slice instead of an array
+        let bufSize = buf.count
         buf.removeAll(keepingCapacity: true)
-        buf.append(contentsOf: rem[0..<buf.count])
+        buf.append(contentsOf: rem[0..<bufSize])
         self.consume(n: rem.count)
         return rem.count
     }

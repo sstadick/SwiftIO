@@ -7,6 +7,7 @@ extension FileHandle: Read {
         if let data = try self.read(upToCount: Int(amt)) {
             buf.removeAll(keepingCapacity: true)
             buf.append(contentsOf: data)
+//            copyBuffer(from: [UInt8](data)[0..<data.count], to: &buf)
             return data.count
         } else {
             return 0
