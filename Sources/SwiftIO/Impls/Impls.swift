@@ -4,10 +4,9 @@ import Foundation
 @available(macOS 10.15.4, *)
 extension FileHandle: Read {
     public func read(buf: inout [UInt8], amt: UInt) throws -> Int {
-        if let data = try self.read(upToCount: Int(min(amt, UInt(buf.count)))) {
-            let _ = buf.withUnsafeMutableBufferPointer { buffer in
-                data.copyBytes(to: buffer)
-            }
+        if let data = try self.read(upToCount: Int(amt)) {
+            buf.removeAll(keepingCapacity: true)
+            buf.append(contentsOf: data)
             return data.count
         } else {
             return 0

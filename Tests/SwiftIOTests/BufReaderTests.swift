@@ -63,8 +63,7 @@ class BufReaderTests: XCTestCase {
 
     func testReadUntil() throws {
 
-        fileHandle = try FileHandle(forReadingFrom: URL(string: "/Users/u103330/dev/personal/SwiftIO/Package.swift")!)
-        let reader = BufReader(reader: fileHandle)
+        let reader = BufReader(reader: self.fileHandle, capacity: 4)
 
         var count = 0
         var buffer: [UInt8] = []

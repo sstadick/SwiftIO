@@ -64,7 +64,6 @@ public class Buffer {
 
         if self.pos >= self.filled {
             assert(self.pos == self.filled)
-
             let bytes_read = try reader.read(buf: &self.buf, amt: self.capacity())
             self.pos = 0
             self.filled = UInt(bytes_read)
